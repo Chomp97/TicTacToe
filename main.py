@@ -1,3 +1,5 @@
+import numpy as np
+
 board = []
 dimension = 0
 game_on = True
@@ -5,6 +7,7 @@ winner = None
 current_player = "X"
 x_score = 0
 o_score = 0
+score_dic = {1: 0, 2: 0, 3: 2, 4: 10, 5: 50, 6: 100, 7: 200, 8: 300, 9: 400, 10: 5000}
 
 
 def display_board():
@@ -41,8 +44,8 @@ def initialize_board():
 
 
 def handle_turn(player):
-    valid = False
-    while not valid:
+    keep_handling = True
+    while keep_handling:
         row = input("Choose a row: ")
         while not (row.isdigit() and int(row) <= dimension):
             row = input("Incorrect value for row. Choose a natural number equal or less than dimension: ")
@@ -53,7 +56,7 @@ def handle_turn(player):
         column = int(column) - 1
         if board[row][column] == "-":
             board[row][column] = player
-            valid = True
+            keep_handling = False
         else:
             print("Position on the board already claimed! Choose another position.")
     display_board()
@@ -71,102 +74,63 @@ def check_if_game_over():
 
 
 def check_points():
-    check_rows()
-    check_columns()
-    check_diagonals()
-
-
-def add_points_to_player(points):
     global x_score
     global o_score
-    if current_player == "X":
-        x_score += points
-    else:
-        o_score += points
+    lengths = []
+    lengths.extend(check_rows())
+    lengths.extend(check_columns())
+    lengths.extend(check_diagonals())
+    for c in lengths:
+        if current_player == "X":
+            x_score += score_dic[c]
+        else:
+            o_score += score_dic[c]
+
+
+def get_lengths(player, row):
+    num_string = np.array([1 if _ == player else 0 for _ in row])
+    counter = []
+    c = 1
+    for j, element in enumerate(np.diff(num_string)):
+        if element == 0:
+            c += 1
+        elif element == -1:
+            counter.append(c)
+            c = 1
+        else:
+            c = 1
+    if num_string[-1] == 1:
+        counter.append(c)
+    return counter
 
 
 def check_rows():
-    for i in range(0, dimension):
-        for j in range(0, dimension):
-            if j + 4 < dimension:
-                if current_player in set(board[i][j:j + 5]) and len(set(board[i][j:j + 5])) == 1:
-                    add_points_to_player(50)
-                    j += 5
-                elif current_player in set(board[i][j:j + 4]) and len(set(board[i][j:j + 4])) == 1:
-                    add_points_to_player(10)
-                    j += 4
-                elif current_player in set(board[i][j:j + 3]) and len(set(board[i][j:j + 3])) == 1:
-                    add_points_to_player(2)
-                    j += 3
-            elif j + 3 < dimension:
-                if current_player in set(board[i][j:j + 4]) and len(set(board[i][j:j + 4])) == 1:
-                    add_points_to_player(10)
-                    j += 4
-                elif current_player in set(board[i][j:j + 3]) and len(set(board[i][j:j + 3])) == 1:
-                    add_points_to_player(2)
-                    j += 3
-            elif j + 2 < dimension:
-                if current_player in set(board[i][j:j + 3]) and len(set(board[i][j:j + 3])) == 1:
-                    add_points_to_player(2)
-                    j += 3
-    return
+    length_counter = []
+    for i in range(dimension):
+        if current_player in board[i]:
+            length_counter.extend(get_lengths(current_player, board[i]))
+    return length_counter
 
 
 def check_columns():
+    length_counter = []
     for i in range(0, dimension):
         k = []
+        # generate column
         for j in range(0, dimension):
             k.append(board[j][i])
-        for n in range(0, dimension):
-            if n + 4 < dimension:
-                if current_player in set(k[n:n + 5]) and len(set(k[n:n + 5])) == 1:
-                    add_points_to_player(50)
-                    n += 5
-                elif current_player in set(k[n:n + 4]) and len(set(k[n:n + 4])) == 1:
-                    add_points_to_player(10)
-                    n += 4
-                elif current_player in set(k[n:n + 3]) and len(set(k[n:n + 3])) == 1:
-                    add_points_to_player(2)
-                    n += 3
-            elif n + 3 < dimension:
-                if current_player in set(k[n:n + 4]) and len(set(k[n:n + 4])) == 1:
-                    add_points_to_player(10)
-                    n += 4
-                elif current_player in set(k[n:n + 3]) and len(set(k[n:n + 3])) == 1:
-                    add_points_to_player(2)
-                    n += 3
-            elif n + 2 < dimension:
-                if current_player in set(k[n:n + 3]) and len(set(k[n:n + 3])) == 1:
-                    add_points_to_player(2)
-                    n += 3
+        if current_player in k:
+            length_counter.extend(get_lengths(current_player, k))
+    return length_counter
 
 
 def check_diagonals():
     d = get_diagonals()
+    length_counter = []
     for diagonal in d:
-        leng = len(diagonal)
-        for n in range(0, leng):
-            if n + 4 < leng:
-                if current_player in set(diagonal[n:n+5]) and len(set(diagonal[n:n+5])) == 1:
-                    add_points_to_player(50)
-                    n += 5
-                elif current_player in set(diagonal[n:n+4]) and len(set(diagonal[n:n+4])) == 1:
-                    add_points_to_player(10)
-                    n += 4
-                elif current_player in set(diagonal[n:n+3]) and len(set(diagonal[n:n+3])) == 1:
-                    add_points_to_player(2)
-                    n += 3
-            elif n + 3 < leng:
-                if current_player in set(diagonal[n:n + 4]) and len(set(diagonal[n:n + 4])) == 1:
-                    add_points_to_player(10)
-                    n += 4
-                elif current_player in set(diagonal[n:n + 3]) and len(set(diagonal[n:n + 3])) == 1:
-                    add_points_to_player(2)
-                    n += 3
-            elif n + 2 < leng:
-                if current_player in set(diagonal[n:n + 3]) and len(set(diagonal[n:n + 3])) == 1:
-                    add_points_to_player(2)
-                    n += 3
+        if current_player in diagonal:
+            length_counter.extend(get_lengths(current_player, diagonal))
+    return length_counter
 
 
 def get_diagonals():
